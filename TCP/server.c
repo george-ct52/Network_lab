@@ -40,35 +40,39 @@ int main() {
 
     printf("Server is listening on port %d...\n", PORT);
 
-    // Accept a client connection
-    if ((client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &addr_len)) == -1) {
-        perror("Accept failed");
-        close(server_fd);
-        exit(1);
-    }
-
-    printf("Client connected.\n");
-
-    // Two-way communication loop
     while (1) {
-        memset(buffer, 0, BUFFER_SIZE);
-
-        // Receive message from client
-        int recv_len = recv(client_fd, buffer, BUFFER_SIZE, 0);
-        if (recv_len <= 0) {
-            printf("Client disconnected.\n");
-            break;
+        // Accept a client connection
+        client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &addr_len);
+        if (client_fd == -1) {
+            perror("Accept failed");
+            continue;  // Continue to listen for other clients if accept fails
         }
-        printf("Received from client: %s\n", buffer);
 
-        // Send response to client
-        printf("Enter message to send to client: ");
-        fgets(buffer, BUFFER_SIZE, stdin);
-        send(client_fd, buffer, strlen(buffer), 0);
+        printf("Client connected.\n");
+
+        // Two-way communication loop for this client
+        while (1) {
+            memset(buffer, 0, BUFFER_SIZE);
+
+            // Receive message from client
+            int recv_len = recv(client_fd, buffer, BUFFER_SIZE, 0);
+            if (recv_len <= 0) {
+                printf("Client disconnected.\n");
+                break;  // Break out of the inner loop to close the connection
+            }
+            printf("Received from client: %s\n", buffer);
+
+            // Send response to client
+            printf("Enter message to send to client: ");
+            fgets(buffer, BUFFER_SIZE, stdin);
+            send(client_fd, buffer, strlen(buffer), 0);
+        }
+
+        // Close the client socket after communication ends
+        close(client_fd);
+        printf("Waiting for new client...\n");
     }
 
-    close(client_fd);
     close(server_fd);
     return 0;
 }
-
