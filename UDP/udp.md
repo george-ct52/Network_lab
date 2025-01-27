@@ -1,6 +1,4 @@
-In the case of **UDP** (User Datagram Protocol), the process of setting up sockets and using **`sockaddr_in`** (for IPv4) to define the server and client address remains very similar to the TCP setup, but with a few differences in how the communication happens. Since UDP is a **connectionless** protocol, it doesn't require establishing a connection like TCP does. Instead, it just sends **datagrams** (small packets of data) to a specific address and port.
 
-Let's walk through a UDP server and client example using the **`sockaddr_in`** structure for both the server and client:
 
 ### **UDP Server (server.c)**
 ```c
