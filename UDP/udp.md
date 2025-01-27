@@ -1,6 +1,6 @@
+### **Two-Way UDP Communication**
 
-
-### **UDP Server (server.c)**
+#### **UDP Server (`server.c`)**:
 ```c
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,9 +48,13 @@ int main() {
 
         printf("Received from client: %s\n", buffer);
 
-        // Send response to client
-        const char *response = "Message received by server";
-        sendto(sock_fd, response, strlen(response), 0, (struct sockaddr *)&client_addr, addr_len);
+        // Send response to client (two-way communication)
+        printf("Enter message to send to client: ");
+        fgets(buffer, BUFFER_SIZE, stdin);
+        buffer[strcspn(buffer, "\n")] = '\0';  // Remove newline character
+        
+        // Send response back to client
+        sendto(sock_fd, buffer, strlen(buffer), 0, (struct sockaddr *)&client_addr, addr_len);
     }
 
     close(sock_fd);
@@ -58,7 +62,7 @@ int main() {
 }
 ```
 
-### **UDP Client (client.c)**
+#### **UDP Client (`client.c`)**:
 ```c
 #include <stdio.h>
 #include <stdlib.h>
@@ -123,65 +127,62 @@ int main() {
 }
 ```
 
-### Explanation of UDP Client and Server Code:
+---
 
-#### **UDP Server (`server.c`):**
-1. **Socket Creation**: 
-   - The server creates a **UDP socket** with `socket(AF_INET, SOCK_DGRAM, 0)`. Note that `SOCK_DGRAM` specifies that it is a **UDP** socket (as opposed to `SOCK_STREAM` for TCP).
+### **Key Changes to Achieve Two-Way Communication**:
+
+1. **Server Side**:
+   - The server continuously **receives** messages from the client using `recvfrom()`.
+   - After receiving a message, the server sends a response back to the client by using `sendto()`. 
+   - The server asks for user input (using `fgets()`) to send a message back to the client, allowing **two-way communication**.
+
+2. **Client Side**:
+   - The client **sends** messages to the server using `sendto()`.
+   - After sending the message, the client waits for the server’s response using `recvfrom()`.
+   - The client can send multiple messages, and the server will respond each time, enabling continuous interaction.
+
+---
+
+### **How the Two-Way Communication Works**:
+
+1. **Server**:
+   - The server receives a message from the client, prints it, and then prompts the user to type a response. The server then sends this response back to the client.
    
-2. **Setting up Address**: 
-   - The server fills in the `sockaddr_in` structure (`server_addr`) with the **IPv4 address** (using `INADDR_ANY` to bind to any available network interface) and the **port number** (using `htons()` to ensure it's in network byte order).
+2. **Client**:
+   - The client sends a message to the server and waits for a response. It prints the server's response, then prompts the user to send another message.
+   
+3. The process continues until the client sends the message `"exit"`, which breaks out of the loop.
 
-3. **Binding the Socket**:
-   - The server binds the socket to a specific port using the `bind()` function. This tells the server to listen for **UDP datagrams** on the specified port.
+---
 
-4. **Receiving and Sending Data**:
-   - The server uses `recvfrom()` to receive data from any client. The client’s address is also returned via the `client_addr` structure.
-   - After receiving data, the server sends a response back to the client using `sendto()`. Since UDP is connectionless, the server doesn't need to maintain a connection with the client; it simply sends the response back to the client's address.
+### **Example Output**:
 
-#### **UDP Client (`client.c`):**
-1. **Socket Creation**:
-   - Similar to the server, the client creates a **UDP socket** with `socket(AF_INET, SOCK_DGRAM, 0)`.
-
-2. **Setting up Address**:
-   - The client fills in the `sockaddr_in` structure (`server_addr`) with the **server's IP address** (`127.0.0.1` for localhost) and the **port number**.
-
-3. **Sending Data**:
-   - The client uses `sendto()` to send data (a message entered by the user) to the server. Since UDP is connectionless, there's no need for a handshake; the client just sends the message to the server's IP and port.
-
-4. **Receiving Response**:
-   - The client waits for a response using `recvfrom()`. Once it receives the response, it displays it to the user.
-   - If the user types `"exit"`, the client will stop the communication and close the socket.
-
-### Key Differences between TCP and UDP in Code:
-- **UDP**: 
-  - **Connectionless**: There’s no need for a connection setup or teardown. Data is sent as individual datagrams.
-  - The functions used for sending and receiving data are **`sendto()`** and **`recvfrom()`** (since UDP doesn’t maintain a persistent connection).
-  
-- **TCP**:
-  - **Connection-oriented**: The server needs to `listen()` and `accept()` connections from clients. Communication is maintained over a connection.
-  - The functions used for sending and receiving data are **`send()`** and **`recv()`**.
-
-### Example Output:
-
-#### **Server Output (UDP Server)**:
+#### **Server Output** (UDP Server):
 ```bash
 UDP Server is listening on port 8080...
 Received from client: Hello Server!
-Received from client: exit
+Enter message to send to client: Hello Client!
+Received from client: How are you?
+Enter message to send to client: I'm doing great!
 ```
 
-#### **Client Output (UDP Client)**:
+#### **Client Output** (UDP Client):
 ```bash
 Connected to server.
 Enter message to send to server (type 'exit' to quit): Hello Server!
-Received from server: Message received by server
+Received from server: Hello Client!
+Enter message to send to server (type 'exit' to quit): How are you?
+Received from server: I'm doing great!
 Enter message to send to server (type 'exit' to quit): exit
 Exiting communication.
 ```
 
-### Summary:
-- **UDP** does not require the connection setup and teardown that **TCP** does.
-- **Server** listens on a port and **receives** and **sends** datagrams without establishing a connection.
-- The **client** simply sends a datagram to the server and optionally waits for a response.
-- The process is similar to TCP, but simpler and without the overhead of connection management.
+---
+
+### **Summary**:
+- **UDP** allows both the server and the client to **send and receive messages independently**.
+- Both the **client** and the **server** in this example send and receive messages in a **two-way communication loop**.
+- The **server** doesn't just receive messages from the client; it also sends responses back after receiving the client’s message.
+- Similarly, the **client** sends messages to the server and waits for the server's response.
+
+By using `sendto()` and `recvfrom()` on both sides (client and server), we achieve the desired two-way communication in a **UDP** context!
